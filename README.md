@@ -1,5 +1,67 @@
-# Welcome to GitHub Desktop!
+# Удалённый телескоп — команда из чатов Claude Code
 
-This is your README. READMEs are where you can communicate what your project is and how to use it.
+Несколько чатов Claude Code работают как команда. Каждый чат — одна роль.
+Общаются через файлы в этом репозитории (`team/`), за порядком следит сторож.
 
-Write your name on line 6, save it, and then head back to GitHub Desktop.
+```
+                    ┌──────────────┐
+         человек ──▶│ coordinator  │◀── watchdog (проверка раз в час)
+                    └──────┬───────┘
+     ┌────────┬────────┬───┴────┬────────┬────────┐
+ hardware  research   coder   tester    docs     repo
+ (локально,  (поиск)  (код,   (тесты,  (докум.)  (PR, уборка,
+  платы)             уставки) проверка)           порядок)
+```
+
+## Роли
+| Роль | Где запускать | Что делает |
+|------|---------------|------------|
+| coordinator | облако или локально | план, раздача задач, часовой обход, сводки человеку |
+| hardware | **только локально, на компьютере с платами** | железо, порты, прошивка, запуск на устройстве |
+| research | облако | поиск в интернете, даташиты, протоколы → `research/` |
+| coder | облако | код `src/`, прошивки `firmware/`, уставки `config/` |
+| tester | облако | тесты `tests/`, проверка PR и уставок |
+| docs | облако | `docs/`, `README.md` |
+| repo | облако | PR и мёржи, `.gitignore`, CI, уборка мусора |
+
+Подробно — `team/roles/<роль>.md`. Общие правила — `CLAUDE.md` (подхватывается автоматически).
+
+## Как запустить
+1. Открой 7 чатов Claude Code в этом репозитории (или начни с 4: coordinator, hardware, coder, tester —
+   остальные роли временно отдай им).
+2. Первое сообщение в каждом чате:
+   ```
+   Ты — <роль> в команде «Удалённый телескоп». Прочитай CLAUDE.md и team/roles/<роль>.md.
+   Работай по циклу из CLAUDE.md. Начни с: python3 tools/team.py inbox <роль>
+   ```
+   Для локального чата с железом: `CLAUDE_ROLE=hardware claude`.
+3. В чате каждой роли включи самопроверку: `/loop 1h` + «Проверь inbox, сделай ack на новое,
+   продолжи работу, beat и sync».
+4. В чате координатора — часовой обход (текст в `team/roles/coordinator.md`).
+
+## Как общаются
+```bash
+python3 tools/team.py send coordinator coder "Драйвер фокусера" "Критерий: ... Срок: ..."
+python3 tools/team.py inbox coder           # входящие
+python3 tools/team.py ack  <id> coder       # квитанция «получил»
+python3 tools/team.py done <id> coder "PR #3"
+python3 tools/team.py beat coder "пишу драйвер"   # «я жив», минимум раз в час
+python3 tools/team.py sync coder            # pull + commit team/ + push в main
+```
+Сообщения — файлы `team/msgs/*.md`, статусы — `team/status/<роль>.md`, план — `team/board.md`.
+
+## Сторож и уборка
+```bash
+python3 tools/team.py check --notify   # просрочки, нарушения, мусор, секреты → сообщения виновным
+python3 tools/team.py clean            # показать мусор
+python3 tools/team.py clean --apply    # удалить мусор, заархивировать старые сообщения
+```
+| Проверка | Порог |
+|----------|-------|
+| чат молчит (нет `beat`) | 70 мин |
+| указание не подтверждено (`ack`) | 30 мин |
+| задача принята, но не закрыта | 24 ч |
+| коммит без `[роль]` / правка чужой зоны | сразу |
+| мусор, файл > 5 МБ, похоже на секрет | сразу |
+
+Пороги и зоны — в начале `tools/team.py`.

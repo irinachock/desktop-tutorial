@@ -1,0 +1,31 @@
+# мусор
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+Thumbs.db
+*.tmp
+*.bak
+*.swp
+*~
+*.log
+*.orig
+*.rej
+build/
+dist/
+node_modules/
+
+# секреты и локальные настройки
+.env
+*.local.*
+.claude/settings.local.json
+
+# данные наблюдений — не в git
+data/
+*.fits
+*.fit
+*.raw
+*.ser
+
+# архив старых сообщений команды
+team/archive/
